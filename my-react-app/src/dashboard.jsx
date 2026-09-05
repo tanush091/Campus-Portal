@@ -6,6 +6,8 @@ function Dashboard() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
+  const [showPasswords, setShowPasswords] = useState(true);
+  const [isManualRole, setIsManualRole] = useState(false);
   const [formData, setFormData] = useState({
     id: "",
     name: "",
@@ -54,6 +56,8 @@ function Dashboard() {
   }
 
   function handleEdit(user) {
+    const hasCustomRole = user.role && user.role !== "Student" && user.role !== "Faculty";
+    setIsManualRole(hasCustomRole);
     setFormData({
       id: user.id,
       name: user.name || "",
@@ -80,6 +84,7 @@ function Dashboard() {
         await axios.post("http://localhost:8080/employee", formData);
         alert("Added successfully!");
       }
+      setIsManualRole(false);
       setFormData({
         id: "",
         name: "",
@@ -102,10 +107,18 @@ function Dashboard() {
       <p>
         <strong>Logged in user:</strong> {currentUser?.name || currentUser?.email} (
         <strong>Role:</strong> {currentUser?.role || "Student"})
+        {currentUser?.password && (
+          <span>
+            {" "}| <strong>Password:</strong> {showPasswords ? currentUser.password : "••••••••"}
+          </span>
+        )}
       </p>
 
       <button onClick={getUsers}>Refresh Data</button>
-      <button onClick={logout}>Logout</button>
+      <button onClick={() => setShowPasswords(!showPasswords)} style={{ marginLeft: "6px" }}>
+        {showPasswords ? "Hide Passwords" : "Show Passwords"}
+      </button>
+      <button onClick={logout} style={{ marginLeft: "6px" }}>Logout</button>
 
       <hr style={{ margin: "20px 0" }} />
 
@@ -125,10 +138,34 @@ function Dashboard() {
             />
 
             <label>Role:</label>
-            <select name="role" value={formData.role} onChange={handleFormChange}>
+            <select
+              value={isManualRole ? "Other" : (formData.role || "Student")}
+              onChange={(e) => {
+                if (e.target.value === "Other") {
+                  setIsManualRole(true);
+                  setFormData({ ...formData, role: "" });
+                } else {
+                  setIsManualRole(false);
+                  setFormData({ ...formData, role: e.target.value });
+                }
+              }}
+            >
               <option value="Student">Student</option>
               <option value="Faculty">Faculty</option>
+              <option value="Other">Other (Write role manually)</option>
             </select>
+
+            {isManualRole && (
+              <input
+                type="text"
+                name="role"
+                placeholder="Enter role manually (e.g. Admin, Staff, HOD)"
+                value={formData.role}
+                onChange={handleFormChange}
+                required
+                style={{ marginTop: "4px" }}
+              />
+            )}
 
             <label>Email:</label>
             <input
@@ -154,15 +191,16 @@ function Dashboard() {
             {formData.id && (
               <button
                 type="button"
-                onClick={() =>
+                onClick={() => {
+                  setIsManualRole(false);
                   setFormData({
                     id: "",
                     name: "",
                     role: "Student",
                     email: "",
                     password: ""
-                  })
-                }
+                  });
+                }}
               >
                 Cancel
               </button>
@@ -177,6 +215,7 @@ function Dashboard() {
                 <th>Name</th>
                 <th>Role</th>
                 <th>Email</th>
+                <th>Password</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -187,6 +226,7 @@ function Dashboard() {
                   <td>{user.name}</td>
                   <td>{user.role}</td>
                   <td>{user.email}</td>
+                  <td>{showPasswords ? user.password : "••••••••"}</td>
                   <td>
                     <button onClick={() => handleEdit(user)}>Edit</button>
                     <button onClick={() => handleDelete(user.id)}>Delete</button>
@@ -203,6 +243,7 @@ function Dashboard() {
           <p><strong>Name:</strong> {currentUser?.name}</p>
           <p><strong>Email:</strong> {currentUser?.email}</p>
           <p><strong>Role:</strong> Student</p>
+          <p><strong>Password:</strong> {showPasswords ? (currentUser?.password || "••••••••") : "••••••••"}</p>
 
           <h3>Faculty Members Directory</h3>
           <table border="1">
@@ -212,12 +253,13 @@ function Dashboard() {
                 <th>Faculty Name</th>
                 <th>Role</th>
                 <th>Email</th>
+                <th>Password</th>
               </tr>
             </thead>
             <tbody>
               {facultyList.length === 0 ? (
                 <tr>
-                  <td colSpan="4">No faculty records found.</td>
+                  <td colSpan="5">No faculty records found.</td>
                 </tr>
               ) : (
                 facultyList.map((faculty) => (
@@ -226,6 +268,7 @@ function Dashboard() {
                     <td>{faculty.name}</td>
                     <td>{faculty.role}</td>
                     <td>{faculty.email}</td>
+                    <td>{showPasswords ? faculty.password : "••••••••"}</td>
                   </tr>
                 ))
               )}

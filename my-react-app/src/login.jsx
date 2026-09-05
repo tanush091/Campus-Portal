@@ -5,6 +5,7 @@ import { useNavigate, Link } from "react-router-dom";
 function Login() {
   const navigate = useNavigate();
   const [role, setRole] = useState("Student");
+  const [isManualRole, setIsManualRole] = useState(false);
   const [loginUser, setLoginUser] = useState({
     email: "",
     password: ""
@@ -49,10 +50,33 @@ function Login() {
 
       <form onSubmit={submit}>
         <label>Select Role:</label>
-        <select value={role} onChange={(e) => setRole(e.target.value)}>
+        <select
+          value={isManualRole ? "Other" : role}
+          onChange={(e) => {
+            if (e.target.value === "Other") {
+              setIsManualRole(true);
+              setRole("");
+            } else {
+              setIsManualRole(false);
+              setRole(e.target.value);
+            }
+          }}
+        >
           <option value="Student">Student</option>
           <option value="Faculty">Faculty</option>
+          <option value="Other">Other (Write role manually)</option>
         </select>
+
+        {isManualRole && (
+          <input
+            type="text"
+            placeholder="Enter custom role"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            required
+            style={{ marginTop: "4px" }}
+          />
+        )}
 
         <label>Email:</label>
         <input

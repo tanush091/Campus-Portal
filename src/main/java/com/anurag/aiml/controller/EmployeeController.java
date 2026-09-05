@@ -22,7 +22,7 @@ import com.anurag.aiml.service.EmployeeService;
 import jakarta.validation.Valid;
 
 @RestController
-@CrossOrigin("http://localhost:5173")
+@CrossOrigin("http://localhost:5174")
 @RequestMapping("/employee")
 public class EmployeeController {
     private final EmployeeService service;

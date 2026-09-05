@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 function Employee() {
   const [employees, setEmployees] = useState([]);
   const [errors, setErrors] = useState({});
+  const [isManualRole, setIsManualRole] = useState(false);
   const [formData, setFormData] = useState({
     id: "",
     name: "",
@@ -56,6 +57,7 @@ function Employee() {
         .post("http://localhost:8080/employee", formData)
         .then(() => {
           getEmployees();
+          setIsManualRole(false);
           setFormData({
             id: "",
             name: "",
@@ -72,6 +74,7 @@ function Employee() {
         .put(`http://localhost:8080/employee/${formData.id}`, formData)
         .then(() => {
           getEmployees();
+          setIsManualRole(false);
           setFormData({
             id: "",
             name: "",
@@ -87,6 +90,8 @@ function Employee() {
   };
 
   const editHandle = (employee) => {
+    const hasCustomRole = employee.role && employee.role !== "Student" && employee.role !== "Faculty";
+    setIsManualRole(hasCustomRole);
     setFormData({
       id: employee.id || "",
       name: employee.name || "",
@@ -126,10 +131,33 @@ function Employee() {
         {errors.name && <p style={{ color: "red" }}>{errors.name}</p>}
 
         <label>Role:</label>
-        <select name="role" value={formData.role} onChange={handleChange}>
+        <select
+          value={isManualRole ? "Other" : (formData.role || "Student")}
+          onChange={(e) => {
+            if (e.target.value === "Other") {
+              setIsManualRole(true);
+              setFormData({ ...formData, role: "" });
+            } else {
+              setIsManualRole(false);
+              setFormData({ ...formData, role: e.target.value });
+            }
+          }}
+        >
           <option value="Student">Student</option>
           <option value="Faculty">Faculty</option>
+          <option value="Other">Other (Write role manually)</option>
         </select>
+
+        {isManualRole && (
+          <input
+            type="text"
+            name="role"
+            placeholder="Enter role manually (e.g. Admin, Staff, HOD)"
+            value={formData.role}
+            onChange={handleChange}
+            style={{ marginTop: "4px" }}
+          />
+        )}
         {errors.role && <p style={{ color: "red" }}>{errors.role}</p>}
 
         <label>Email:</label>
@@ -162,6 +190,7 @@ function Employee() {
             <th>Name</th>
             <th>Role</th>
             <th>Email</th>
+            <th>Password</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -172,6 +201,7 @@ function Employee() {
               <td>{employee.name}</td>
               <td>{employee.role}</td>
               <td>{employee.email}</td>
+              <td>{employee.password}</td>
               <td>
                 <button type="button" onClick={() => editHandle(employee)}>
                   Edit

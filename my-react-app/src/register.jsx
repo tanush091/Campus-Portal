@@ -4,6 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 
 function Register() {
   const navigate = useNavigate();
+  const [isManualRole, setIsManualRole] = useState(false);
   const [user, setUser] = useState({
     name: "",
     role: "Student",
@@ -27,6 +28,11 @@ function Register() {
         email: user.email.trim(),
         password: user.password.trim()
       };
+
+      if (!payload.role) {
+        alert("Please select or enter a role.");
+        return;
+      }
 
       if (payload.password.length < 8) {
         alert("Password must be at least 8 characters long.");
@@ -59,10 +65,34 @@ function Register() {
 
       <form onSubmit={register}>
         <label>Role:</label>
-        <select name="role" value={user.role} onChange={handleChange}>
+        <select
+          value={isManualRole ? "Other" : user.role}
+          onChange={(e) => {
+            if (e.target.value === "Other") {
+              setIsManualRole(true);
+              setUser({ ...user, role: "" });
+            } else {
+              setIsManualRole(false);
+              setUser({ ...user, role: e.target.value });
+            }
+          }}
+        >
           <option value="Student">Student</option>
           <option value="Faculty">Faculty</option>
+          <option value="Other">Other (Write role manually)</option>
         </select>
+
+        {isManualRole && (
+          <input
+            type="text"
+            name="role"
+            placeholder="Enter role manually (e.g. Admin, Staff, HOD)"
+            value={user.role}
+            onChange={handleChange}
+            required
+            style={{ marginTop: "4px" }}
+          />
+        )}
 
         <label>Name:</label>
         <input

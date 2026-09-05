@@ -9,5 +9,6 @@ import com.anurag.aiml.entity.Employee;
 
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     Optional<Employee> findFirstByEmailAndPassword(String email, String password);
+    Optional<Employee> findFirstByEmail(String email);
     List<Employee> findByEmail(String email);
 }
