@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api, { errorMessage } from "./api.js";
 import { useNavigate, Link } from "react-router-dom";
 
 function Register() {
@@ -39,23 +39,11 @@ function Register() {
         return;
       }
 
-      await axios.post("http://localhost:8080/employee", payload);
+      await api.post("/employee", payload);
       alert("Registration successful!");
       navigate("/");
     } catch (err) {
-      if (err.response && err.response.data) {
-        const errorData = err.response.data;
-        if (typeof errorData === "object") {
-          const messages = Object.entries(errorData)
-            .map(([field, msg]) => `${field}: ${msg}`)
-            .join("\n");
-          alert("Registration Failed:\n" + messages);
-        } else {
-          alert("Registration Failed: " + errorData);
-        }
-      } else {
-        alert("Registration Failed: Could not connect to backend server.");
-      }
+      alert("Registration Failed:\n" + errorMessage(err));
     }
   }
 

@@ -2,9 +2,13 @@ package com.anurag.aiml.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 
 public class EmployeeDto {
+    /** Validation group for rules that only apply when creating an employee. */
+    public interface OnCreate {
+    }
+
     @NotBlank(message = "Name is required")
     private String name;
 
@@ -15,8 +19,9 @@ public class EmployeeDto {
     @Email(message = "Email must be valid")
     private String email;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, message = "Atleast password required 8 char")
+    // Required on create; on update a blank password means "keep the current one".
+    @NotBlank(message = "Password is required", groups = OnCreate.class)
+    @Pattern(regexp = "^$|.{8,}", message = "Atleast password required 8 char")
     private String password;
 
     public EmployeeDto() {

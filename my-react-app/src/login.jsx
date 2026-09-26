@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api, { errorMessage } from "./api.js";
 import { useNavigate, Link } from "react-router-dom";
 
 function Login() {
@@ -25,22 +25,15 @@ function Login() {
         email: loginUser.email.trim(),
         password: loginUser.password.trim()
       };
-      const response = await axios.post("http://localhost:8080/employee/login", payload);
+      const response = await api.post("/employee/login", payload);
       
-      const userData = response.data;
-      const user = typeof userData === "object" ? userData : { email: payload.email, role: role };
-      const actualRole = user.role || role;
-
-      localStorage.setItem("user", JSON.stringify({ ...user, role: actualRole }));
+      const { token, ...user } = response.data;
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify({ ...user, role: user.role || role }));
       alert("Login success!");
       navigate("/dashboard");
     } catch (err) {
-      if (err.response && err.response.data) {
-        const msg = err.response.data.message || err.response.data.error || JSON.stringify(err.response.data);
-        alert("Login Failed: " + msg);
-      } else {
-        alert("Login Failed: Could not reach backend server at http://localhost:8080");
-      }
+      alert("Login Failed: " + errorMessage(err));
     }
   }
 

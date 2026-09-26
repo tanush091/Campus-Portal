@@ -2,7 +2,6 @@ package com.anurag.aiml.controller;
 
 import java.util.List;
 import java.util.Map;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,15 +13,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
 
 import com.anurag.aiml.dto.EmployeeDto;
 import com.anurag.aiml.entity.Employee;
 import com.anurag.aiml.service.EmployeeService;
 
 import jakarta.validation.Valid;
+import jakarta.validation.groups.Default;
 
 @RestController
-@CrossOrigin("http://localhost:5174")
 @RequestMapping("/employee")
 public class EmployeeController {
     private final EmployeeService service;
@@ -36,8 +36,10 @@ public class EmployeeController {
     public List<Employee> getAllEmployees() {
         return service.getAllEmployees();
     }
+
+    // POST localhost:8080/employee/login  -> returns a JWT to send as "Authorization: Bearer <token>"
     @PostMapping("/login")
-    public ResponseEntity<?> login (@RequestBody Employee emp){
+    public ResponseEntity<?> login(@RequestBody Employee emp) {
         return service.login(emp);
     }
 
@@ -50,7 +52,8 @@ public class EmployeeController {
     // POST localhost:8080/employee
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Employee createEmployee(@Valid @RequestBody EmployeeDto dto) {
+    public Employee createEmployee(
+            @Validated({Default.class, EmployeeDto.OnCreate.class}) @RequestBody EmployeeDto dto) {
         return service.createEmployee(dto);
     }
 

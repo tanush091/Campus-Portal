@@ -1,4 +1,4 @@
-import axios from "axios";
+import api, { errorMessage } from "./api.js";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -27,12 +27,12 @@ function Employee() {
   };
 
   const getEmployees = () => {
-    axios
-      .get("http://localhost:8080/employee")
+    api
+      .get("/employee")
       .then((response) => {
         setEmployees(response.data);
       })
-      .catch((err) => console.error("Error fetching employees:", err));
+      .catch((err) => alert("Could not load employees: " + errorMessage(err)));
   };
 
   useEffect(() => {
@@ -45,7 +45,7 @@ function Employee() {
     if (!formData.name) newerrors.name = "Name is required";
     if (!formData.role) newerrors.role = "Role is required";
     if (!formData.email) newerrors.email = "Email is required";
-    if (!formData.password) newerrors.password = "Password is required";
+    if (!formData.id && !formData.password) newerrors.password = "Password is required";
 
     if (Object.keys(newerrors).length > 0) {
       setErrors(newerrors);
@@ -53,8 +53,8 @@ function Employee() {
     }
 
     if (formData.id === "") {
-      axios
-        .post("http://localhost:8080/employee", formData)
+      api
+        .post("/employee", formData)
         .then(() => {
           getEmployees();
           setIsManualRole(false);
@@ -68,10 +68,10 @@ function Employee() {
           setErrors({});
           alert("Registered successfully!");
         })
-        .catch((err) => alert("Error creating employee."));
+        .catch((err) => alert("Error creating employee:\n" + errorMessage(err)));
     } else {
-      axios
-        .put(`http://localhost:8080/employee/${formData.id}`, formData)
+      api
+        .put(`/employee/${formData.id}`, formData)
         .then(() => {
           getEmployees();
           setIsManualRole(false);
@@ -85,7 +85,7 @@ function Employee() {
           setErrors({});
           alert("Updated successfully!");
         })
-        .catch((err) => alert("Error updating employee."));
+        .catch((err) => alert("Error updating employee:\n" + errorMessage(err)));
     }
   };
 
@@ -97,19 +97,19 @@ function Employee() {
       name: employee.name || "",
       role: employee.role || "Student",
       email: employee.email || "",
-      password: employee.password || ""
+      password: ""
     });
   };
 
   const deleteHandle = (id) => {
     if (!id || !window.confirm("Are you sure?")) return;
-    axios
-      .delete(`http://localhost:8080/employee/${id}`)
+    api
+      .delete(`/employee/${id}`)
       .then(() => {
         getEmployees();
         alert("Deleted successfully!");
       })
-      .catch((err) => alert("Error deleting record."));
+      .catch((err) => alert("Error deleting record:\n" + errorMessage(err)));
   };
 
   return (
@@ -175,7 +175,7 @@ function Employee() {
           type="password"
           name="password"
           value={formData.password}
-          placeholder="Enter password"
+          placeholder={formData.id ? "Leave blank to keep current password" : "Enter password"}
           onChange={handleChange}
         />
         {errors.password && <p style={{ color: "red" }}>{errors.password}</p>}
@@ -190,7 +190,6 @@ function Employee() {
             <th>Name</th>
             <th>Role</th>
             <th>Email</th>
-            <th>Password</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -201,7 +200,6 @@ function Employee() {
               <td>{employee.name}</td>
               <td>{employee.role}</td>
               <td>{employee.email}</td>
-              <td>{employee.password}</td>
               <td>
                 <button type="button" onClick={() => editHandle(employee)}>
                   Edit

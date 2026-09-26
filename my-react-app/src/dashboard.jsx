@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import api, { errorMessage } from "./api.js";
+import { Link, useNavigate } from "react-router-dom";
 
 function Dashboard() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
-  const [showPasswords, setShowPasswords] = useState(true);
   const [isManualRole, setIsManualRole] = useState(false);
   const [formData, setFormData] = useState({
     id: "",
@@ -32,14 +31,15 @@ function Dashboard() {
 
   async function getUsers() {
     try {
-      const response = await axios.get("http://localhost:8080/employee");
+      const response = await api.get("/employee");
       setUsers(response.data);
     } catch (err) {
-      alert("Something went wrong while fetching data.");
+      alert("Could not load records: " + errorMessage(err));
     }
   }
 
   function logout() {
+    localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/");
   }
@@ -47,11 +47,15 @@ function Dashboard() {
   async function handleDelete(id) {
     if (!window.confirm("Are you sure you want to delete this record?")) return;
     try {
-      await axios.delete(`http://localhost:8080/employee/${id}`);
+      await api.delete(`/employee/${id}`);
       alert("Successfully deleted.");
+      if (id === currentUser?.id) {
+        logout();
+        return;
+      }
       getUsers();
     } catch (err) {
-      alert("Deletion failed.");
+      alert("Deletion failed: " + errorMessage(err));
     }
   }
 
@@ -63,7 +67,7 @@ function Dashboard() {
       name: user.name || "",
       role: user.role || "Student",
       email: user.email || "",
-      password: user.password || ""
+      password: ""
     });
   }
 
@@ -78,10 +82,16 @@ function Dashboard() {
     e.preventDefault();
     try {
       if (formData.id) {
-        await axios.put(`http://localhost:8080/employee/${formData.id}`, formData);
+        const { data: updated } = await api.put(`/employee/${formData.id}`, formData);
+        if (updated.id === currentUser?.id) {
+          // Keep the header in sync when you edit your own record.
+          const me = { ...currentUser, ...updated };
+          localStorage.setItem("user", JSON.stringify(me));
+          setCurrentUser(me);
+        }
         alert("Updated successfully!");
       } else {
-        await axios.post("http://localhost:8080/employee", formData);
+        await api.post("/employee", formData);
         alert("Added successfully!");
       }
       setIsManualRole(false);
@@ -94,7 +104,7 @@ function Dashboard() {
       });
       getUsers();
     } catch (err) {
-      alert("Operation failed. Ensure password is at least 8 characters.");
+      alert("Operation failed:\n" + errorMessage(err));
     }
   }
 
@@ -107,18 +117,13 @@ function Dashboard() {
       <p>
         <strong>Logged in user:</strong> {currentUser?.name || currentUser?.email} (
         <strong>Role:</strong> {currentUser?.role || "Student"})
-        {currentUser?.password && (
-          <span>
-            {" "}| <strong>Password:</strong> {showPasswords ? currentUser.password : "••••••••"}
-          </span>
-        )}
       </p>
 
       <button onClick={getUsers}>Refresh Data</button>
-      <button onClick={() => setShowPasswords(!showPasswords)} style={{ marginLeft: "6px" }}>
-        {showPasswords ? "Hide Passwords" : "Show Passwords"}
-      </button>
       <button onClick={logout} style={{ marginLeft: "6px" }}>Logout</button>
+      {isFaculty && (
+        <Link to="/employee" style={{ marginLeft: "12px" }}>Manage Employees</Link>
+      )}
 
       <hr style={{ margin: "20px 0" }} />
 
@@ -181,10 +186,10 @@ function Dashboard() {
             <input
               type="password"
               name="password"
-              placeholder="Enter password"
+              placeholder={formData.id ? "Leave blank to keep current password" : "Enter password"}
               value={formData.password}
               onChange={handleFormChange}
-              required
+              required={!formData.id}
             />
 
             <button type="submit">{formData.id ? "Update" : "Save"}</button>
@@ -215,7 +220,6 @@ function Dashboard() {
                 <th>Name</th>
                 <th>Role</th>
                 <th>Email</th>
-                <th>Password</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -226,7 +230,6 @@ function Dashboard() {
                   <td>{user.name}</td>
                   <td>{user.role}</td>
                   <td>{user.email}</td>
-                  <td>{showPasswords ? user.password : "••••••••"}</td>
                   <td>
                     <button onClick={() => handleEdit(user)}>Edit</button>
                     <button onClick={() => handleDelete(user.id)}>Delete</button>
@@ -243,7 +246,6 @@ function Dashboard() {
           <p><strong>Name:</strong> {currentUser?.name}</p>
           <p><strong>Email:</strong> {currentUser?.email}</p>
           <p><strong>Role:</strong> Student</p>
-          <p><strong>Password:</strong> {showPasswords ? (currentUser?.password || "••••••••") : "••••••••"}</p>
 
           <h3>Faculty Members Directory</h3>
           <table border="1">
@@ -253,13 +255,12 @@ function Dashboard() {
                 <th>Faculty Name</th>
                 <th>Role</th>
                 <th>Email</th>
-                <th>Password</th>
               </tr>
             </thead>
             <tbody>
               {facultyList.length === 0 ? (
                 <tr>
-                  <td colSpan="5">No faculty records found.</td>
+                  <td colSpan="4">No faculty records found.</td>
                 </tr>
               ) : (
                 facultyList.map((faculty) => (
@@ -268,7 +269,6 @@ function Dashboard() {
                     <td>{faculty.name}</td>
                     <td>{faculty.role}</td>
                     <td>{faculty.email}</td>
-                    <td>{showPasswords ? faculty.password : "••••••••"}</td>
                   </tr>
                 ))
               )}
